@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Join the Portal</title>
+    <meta name="description" content="Register to join Bryan's portal">
+    <link rel="stylesheet" href="{{ url_for('static', filename='sty.css') }}">
+</head>
+<body>
+    <h1><a href="/" style="color: #89f336;">Back to Login</a></h1>
+
+    <div class="signup-container">
+        <h2>CREATE ACCOUNT</h2>
+        <p>Don't worry, signing up won't wake Bryan up... 🤫</p>
+
+        <form action="/signup" method="POST">
+            <label>Choose Username:</label><br>
+            <input type="text" name="username" placeholder="Username" required>
+
+            <br><br>
+
+            <label>Create Password:</label><br>
+            <input type="password" name="password" placeholder="Password" required>
+
+            <br><br>
+
+            <button type="submit">JOIN THE PORTAL</button>
+        </form>
+
+        <p>Actually, I remember my password! <a href="/" style="color: #89f336;">Go back</a></p>
+    </div>
+</body>
+</html>
