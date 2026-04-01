@@ -1,5 +1,6 @@
 import sqlite3,os
 from flask import Flask, render_template, request, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
 app=Flask(__name__)
 def init_data():
     conn=sqlite3.connect('data.db')
@@ -26,8 +27,9 @@ def signup():
         return "Please fill out all fields!", 400
     try:
         with sqlite3.connect('data.db') as conn:
+            hash=generate_password_hash(password, method='pbkdf2:sha256')
             curse=conn.cursor()
-            curse.execute("INSERT INTO users (username, password) VALUES (?, ?)",(username,password))
+            curse.execute("INSERT INTO users (username, password) VALUES (?, ?)",(username,hash))
             conn.commit()
         return f"Account created for {username}! ,<a href='/'>Go back to login</a>"
     except Exception as e:
@@ -39,10 +41,14 @@ def login():
     password = request.form.get('password')
     with sqlite3.connect('data.db') as conn:
         curse=conn.cursor()
-        curse.execute("SELECT * FROM users WHERE username=? AND password=?",(username,password))
+        curse.execute("SELECT * FROM users WHERE username=?",(username,))
         user=curse.fetchone()
     if user:
-        return f"<h1>Success! Welcome back {username}."
+        datapw=user[2]
+        if check_password_hash(datapw, password):
+            return f"<h1>Success!</h1> Welcome back {username}."
+        else:
+            return f"YOU SHALL NOT PASS!"
     else:
         return f"YOU SHALL NOT PASS!"
 
