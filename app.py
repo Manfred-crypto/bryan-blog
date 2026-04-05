@@ -1,4 +1,6 @@
 import sqlite3,os
+import mimetypes
+mimetypes.add_type('text/css', '.css')
 from flask import Flask, render_template, request, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 app=Flask(__name__)
