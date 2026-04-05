@@ -51,13 +51,55 @@ def login():
             return f"<h1>Success!</h1> Welcome back {username}."
         else:
             return f'''
-                <link rel="stylesheet" href="/static/style.css">
-                <h1 class="earthquake">YOU SHALL NOT PASS</h1>
+            <style>
+                .earthquake {{
+                    display: inline-block;
+                    animation: shake 0.2s infinite;
+                    color: #ff00ff;
+                    font-size: 3rem;
+                    text-shadow: 0 0 20px #ff00ff;
+                }}
+                @keyframes shake {{
+                    0% {{ transform: translate(1px, 1px) rotate(0deg); }}
+                    10% {{ transform: translate(-1px, -2px) rotate(-1deg); }}
+                    20% {{ transform: translate(-3px, 0px) rotate(1deg); }}
+                    30% {{ transform: translate(3px, 2px) rotate(0deg); }}
+                    40% {{ transform: translate(1px, -1px) rotate(1deg); }}
+                    50% {{ transform: translate(-1px, 2px) rotate(-1deg); }}
+                    60% {{ transform: translate(-3px, 1px) rotate(0deg); }}
+                    70% {{ transform: translate(3px, 1px) rotate(-1deg); }}
+                    80% {{ transform: translate(-1px, -1px) rotate(1deg); }}
+                    90% {{ transform: translate(1px, 2px) rotate(0deg); }}
+                    100% {{ transform: translate(1px, -2px) rotate(-1deg); }}
+                }}
+            </style>
+            <h1 class="earthquake">YOU SHALL NOT PASS</h1>
             '''
     else:
         return f'''
-            <link rel="stylesheet" href="/static/style.css">
-            <h1 class="earthquake">YOU SHALL NOT PASS</h1>
+        <style>
+            .earthquake {{
+                display: inline-block;
+                animation: shake 0.2s infinite;
+                color: #ff00ff;
+                font-size: 3rem;
+                text-shadow: 0 0 20px #ff00ff;
+            }}
+            @keyframes shake {{
+                0% {{ transform: translate(1px, 1px) rotate(0deg); }}
+                10% {{ transform: translate(-1px, -2px) rotate(-1deg); }}
+                20% {{ transform: translate(-3px, 0px) rotate(1deg); }}
+                30% {{ transform: translate(3px, 2px) rotate(0deg); }}
+                40% {{ transform: translate(1px, -1px) rotate(1deg); }}
+                50% {{ transform: translate(-1px, 2px) rotate(-1deg); }}
+                60% {{ transform: translate(-3px, 1px) rotate(0deg); }}
+                70% {{ transform: translate(3px, 1px) rotate(-1deg); }}
+                80% {{ transform: translate(-1px, -1px) rotate(1deg); }}
+                90% {{ transform: translate(1px, 2px) rotate(0deg); }}
+                100% {{ transform: translate(1px, -2px) rotate(-1deg); }}
+            }}
+        </style>
+        <h1 class="earthquake">YOU SHALL NOT PASS</h1>
         '''
 
 @app.route('/signup_page')
