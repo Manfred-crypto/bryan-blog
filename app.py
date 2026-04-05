@@ -50,7 +50,7 @@ def login():
         else:
             return f'<h1 class="earthquake">YOU SHALL NOT PASS</h1>'
     else:
-        return f"<h1 class="earthquake">YOU SHALL NOT PASS</h1>"
+        return f'<h1 class="earthquake">YOU SHALL NOT PASS</h1>'
 
 @app.route('/signup_page')
 def signup_page():
