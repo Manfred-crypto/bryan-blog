@@ -48,7 +48,7 @@ def login():
         if check_password_hash(datapw, password):
             return f"<h1>Success!</h1> Welcome back {username}."
         else:
-            return f"<h1 class="earthquake">YOU SHALL NOT PASS</h1>"
+            return f'<h1 class="earthquake">YOU SHALL NOT PASS</h1>'
     else:
         return f"<h1 class="earthquake">YOU SHALL NOT PASS</h1>"
 
