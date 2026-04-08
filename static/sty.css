@@ -12,7 +12,6 @@ body {
   color:#89f336;
 }
 h1, h2 {
-    text-transform: uppercase;
     text-shadow: 0 0 8px #89f336, 0 0 15px #89f336;
 }
 .login-container, .signup-container {
