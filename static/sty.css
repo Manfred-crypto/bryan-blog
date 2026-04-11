@@ -54,7 +54,7 @@ button:hover {
 }
 hr{
     border:0;
-    color: #89f336
+    color: #89f336;
     border-top:1px solid #000000;
     margin:30px auto;
     width:80%;
@@ -62,6 +62,6 @@ hr{
     opacity:1;
 }
 .footer-note{
-    color: #89f336
+    color: #89f336;
     font-family: "Courier New", Courier, monospace;
 }
