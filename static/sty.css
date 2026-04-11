@@ -54,6 +54,7 @@ button:hover {
 }
 hr{
     border:0;
+    background-color: #89f336;
     color: #89f336;
     border-top:1px solid #000000;
     margin:30px auto;
