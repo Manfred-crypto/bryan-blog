@@ -52,15 +52,13 @@ button:hover {
     box-shadow: 0 0 20px #ff00ff;
     transform: scale(1.1);
 }
-hr{
-    border:0;
+hr {
+    border: 0;
+    height: 1px;
     background-color: #89f336;
-    color: #89f336;
-    border-top:1px solid #000000;
-    margin:30px auto;
-    width:80%;
-    display:block !important;
-    opacity:1;
+    margin: 30px auto;
+    width: 80%;
+    display: block !important;
 }
 .footer-note{
     color: #89f336;
