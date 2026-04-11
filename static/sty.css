@@ -52,3 +52,11 @@ button:hover {
     box-shadow: 0 0 20px #ff00ff;
     transform: scale(1.1);
 }
+hr{
+    border:0;
+    border-top:1px solid #000000;
+    margin:30px auto;
+    width:80%;
+    display:block !important;
+    opacity:1;
+}
