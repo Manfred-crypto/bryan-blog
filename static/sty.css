@@ -60,3 +60,6 @@ hr{
     display:block !important;
     opacity:1;
 }
+.footer-note{{
+    font-family: "Courier New", Courier, monospace;
+}}
