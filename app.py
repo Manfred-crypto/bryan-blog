@@ -1,7 +1,7 @@
 import sqlite3,os
 import mimetypes
 mimetypes.add_type('text/css', '.css')
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, abort, request
 from werkzeug.security import generate_password_hash, check_password_hash
 app=Flask(__name__)
 def init_data():
@@ -109,6 +109,19 @@ def signup_page():
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+
+@app.errorhandler(400)
+def page_not_found(e):
+    return render_template('400.html'), 400
+
+from flask import abort, request
+
+@app.route('/hex')
+def gate():
+    key=request.args.get('key')
+    if not key:
+        abort(400)
+    return "You entered the gate."
 
 if __name__=='__main__':
     init_data()
