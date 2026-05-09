@@ -64,3 +64,49 @@ hr {
     color: #89f336;
     font-family: "Courier New", Courier, monospace;
 }
+.earthquake {
+    display: inline-block;
+    animation: shake 0.15s infinite;
+    color: #ff00ff;
+    font-size: 3rem;
+    text-shadow: 0 0 20px #ff00ff;
+}
+@keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
+    60% { transform: translate(-3px, 1px) rotate(0deg); }
+    70% { transform: translate(3px, 1px) rotate(-1deg); }
+    80% { transform: translate(-1px, -1px) rotate(1deg); }
+    90% { transform: translate(1px, 2px) rotate(0deg); }
+    100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+.error-page {
+    background-color: #000;
+    color: #ff00ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+}
+
+.retry-link {
+    color: #00ff41;
+    text-decoration: none;
+    border: 1px solid #00ff41;
+    padding: 5px 10px;
+}
+
+.retry-link:hover {
+    background-color: #00ff41;
+    color: #000;
+}
+
+.stable-zone {
+    margin-top: 30px;
+}

@@ -1,7 +1,7 @@
 import sqlite3,os
 import mimetypes
 mimetypes.add_type('text/css', '.css')
-from flask import Flask, render_template, request, redirect, url_for, abort, request
+from flask import Flask, render_template, request, redirect, url_for, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 app=Flask(__name__)
 def init_data():
@@ -33,7 +33,7 @@ def signup():
             curse=conn.cursor()
             curse.execute("INSERT INTO users (username, password) VALUES (?, ?)",(username,hash))
             conn.commit()
-        return f"Account created for {username}! ,<a href='/'>Go back to login</a>"
+        return f"Account created for {username}! <a href='/'>Go back to login</a>"
     except Exception as e:
         return f"An error occurred: {e}"
 
@@ -42,65 +42,14 @@ def login():
     username = request.form.get('username')
     password = request.form.get('password')
     with sqlite3.connect('data.db') as conn:
-        curse=conn.cursor()
-        curse.execute("SELECT * FROM users WHERE username=?",(username,))
-        user=curse.fetchone()
+        curse = conn.cursor()
+        curse.execute("SELECT * FROM users WHERE username=?", (username,))
+        user = curse.fetchone()
     if user:
-        datapw=user[2]
+        datapw = user[2]
         if check_password_hash(datapw, password):
-            return f"<h1>Success!</h1> Welcome back {username}."
-        else:
-            return f'''
-            <style>
-                .earthquake {{
-                    display: inline-block;
-                    animation: shake 0.2s infinite;
-                    color: #ff00ff;
-                    font-size: 3rem;
-                    text-shadow: 0 0 20px #ff00ff;
-                }}
-                @keyframes shake {{
-                    0% {{ transform: translate(1px, 1px) rotate(0deg); }}
-                    10% {{ transform: translate(-1px, -2px) rotate(-1deg); }}
-                    20% {{ transform: translate(-3px, 0px) rotate(1deg); }}
-                    30% {{ transform: translate(3px, 2px) rotate(0deg); }}
-                    40% {{ transform: translate(1px, -1px) rotate(1deg); }}
-                    50% {{ transform: translate(-1px, 2px) rotate(-1deg); }}
-                    60% {{ transform: translate(-3px, 1px) rotate(0deg); }}
-                    70% {{ transform: translate(3px, 1px) rotate(-1deg); }}
-                    80% {{ transform: translate(-1px, -1px) rotate(1deg); }}
-                    90% {{ transform: translate(1px, 2px) rotate(0deg); }}
-                    100% {{ transform: translate(1px, -2px) rotate(-1deg); }}
-                }}
-            </style>
-            <h1 class="earthquake">YOU SHALL NOT PASS</h1>
-            '''
-    else:
-        return f'''
-        <style>
-            .earthquake {{
-                display: inline-block;
-                animation: shake 0.2s infinite;
-                color: #ff00ff;
-                font-size: 3rem;
-                text-shadow: 0 0 20px #ff00ff;
-            }}
-            @keyframes shake {{
-                0% {{ transform: translate(1px, 1px) rotate(0deg); }}
-                10% {{ transform: translate(-1px, -2px) rotate(-1deg); }}
-                20% {{ transform: translate(-3px, 0px) rotate(1deg); }}
-                30% {{ transform: translate(3px, 2px) rotate(0deg); }}
-                40% {{ transform: translate(1px, -1px) rotate(1deg); }}
-                50% {{ transform: translate(-1px, 2px) rotate(-1deg); }}
-                60% {{ transform: translate(-3px, 1px) rotate(0deg); }}
-                70% {{ transform: translate(3px, 1px) rotate(-1deg); }}
-                80% {{ transform: translate(-1px, -1px) rotate(1deg); }}
-                90% {{ transform: translate(1px, 2px) rotate(0deg); }}
-                100% {{ transform: translate(1px, -2px) rotate(-1deg); }}
-            }}
-        </style>
-        <h1 class="earthquake">YOU SHALL NOT PASS</h1>
-        '''
+            return f"<h1>Success!</h1> Welcome back, {username}!"
+    return render_template('login_fail.html'), 401
 
 @app.route('/signup_page')
 def signup_page():
@@ -111,10 +60,8 @@ def page_not_found(e):
     return render_template('404.html'), 404
 
 @app.errorhandler(400)
-def page_not_found(e):
+def bad_request(e):
     return render_template('400.html'), 400
-
-from flask import abort, request
 
 @app.route('/hex')
 def gate():
