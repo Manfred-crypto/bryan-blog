@@ -2,7 +2,6 @@ import sqlite3,os
 import mimetypes
 mimetypes.add_type('text/css', '.css')
 from flask import Flask, render_template, request, redirect, url_for, abort
-# from werkzeug.security import generate_password_hash, check_password_hash
 from cryptography.fernet import Fernet
 SECRET_KEY=b'7_W2N6K4XzR7u1BlM09zS_VvKxN_d8Y3ZpQ2tW4eF1g='
 cipher=Fernet(SECRET_KEY)
