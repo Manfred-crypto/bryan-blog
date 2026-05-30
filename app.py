@@ -68,11 +68,17 @@ def get_latest_blog_post():
     month=parts[-2]
     day=parts[-1].replace('.html', '')
 
+    try:
+        month=f"{int(month):02d}"
+        day=f"{int(day):02d}"
+    except ValueError:
+        pass
+
     return f'/blog/{year}/{month}/{day}'
 
 @app.route('/')
 def home():
-    latest=get_latest_blog_post() or '/blog/2026/05/30'
+    latest=get_latest_blog_post() or '/blog/2026/05/31'
     if 'username' in session:
         username=session['username']
         with sqlite3.connect('data.db') as conn:
