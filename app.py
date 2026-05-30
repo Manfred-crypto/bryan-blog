@@ -118,7 +118,7 @@ def signup():
             curse=conn.cursor()
             curse.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, encrypted_password))
             conn.commit()
-        return f"<h1>Success!</h1> Account created for {username}! <a href='/'>Go log in</a>"
+        return render_template('signup_success.html', username=username)
     except sqlite3.IntegrityError:
         return "<h1>Error</h1> That username is already in use. Choose another one", 400
 

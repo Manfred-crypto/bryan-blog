@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Account Created</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="centered-body">
+    <div class="card success-card">
+        <h1>Success!</h1>
+        <p>Account created for <strong>{{ username }}</strong>!</p>
+        <a href="/" class="btn-link">Go log in</a>
+    </div>
+</body>
+</html>
