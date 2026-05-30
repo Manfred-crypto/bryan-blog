@@ -1,7 +1,4 @@
-import sqlite3
-import os
-import mimetypes
-import glob
+import sqlite3, os, mimetypes, glob, math
 
 mimetypes.add_type('text/css', '.css')
 
@@ -21,9 +18,34 @@ def init_data():
         CREATE TABLE IF NOT EXISTS users(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL
+            password TEXT NOT NULL,
+            charisma INTEGER DEFAULT 0
         )
     ''')
+    curse.execute('''
+        CREATE TABLE IF NOT EXISTS secret_codes(
+            hex TEXT PRIMARY KEY,
+            display_name TEXT NOT NULL DEFAULT 'Mystery Secret',
+            points_value INTEGER DEFAULT 1
+        )
+    ''')
+    curse.execute('''
+        CREATE TABLE IF NOT EXISTS user_codes(
+            user_id INTEGER,
+            hex TEXT,
+            PRIMARY KEY (user_id, hex),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (hex) REFERENCES secret_codes(hex)
+        )
+    ''')
+    diamonds=[
+        ('5468697349734372756369616c', 'Readme!', 4),
+        ('4e6175676874794368696c64', '400', 2),
+        ('506c656173654765744f7574', '404', 0),
+        ('466c697020616c6c20302f31', 'Beginner!', 7),
+        ('b993968fdf9e9393dfcfd0ce', 'Puzzle solved.', 14)
+    ]
+    curse.executemany("INSERT OR IGNORE INTO secret_codes (hex, display_name, points_value) VALUES (?, ?, ?)", diamonds)
     conn.commit()
     conn.close()
 
@@ -50,14 +72,32 @@ def get_latest_blog_post():
 
 @app.route('/')
 def home():
-    latest=get_latest_blog_post()
-    if not latest:
-        latest='/blog/2026/05/30'
-
+    latest=get_latest_blog_post() or '/blog/2026/05/30'
     if 'username' in session:
-        return redirect(latest)
-
-    return render_template('index.html')
+        username=session['username']
+        with sqlite3.connect('data.db') as conn:
+            curse=conn.cursor()
+            curse.execute("SELECT id, charisma FROM users WHERE username=?", (username,))
+            user=curse.fetchone()
+            user_id, total=user[0], user[1]
+            calculated_level=math.floor(math.sqrt(total))
+            curse.execute('''
+                SELECT uc.hex, sc.display_name
+                FROM user_codes uc
+                JOIN secret_codes sc ON uc.hex = sc.hex
+                WHERE uc.user_id = ?
+            ''', (user_id,))
+            rows=curse.fetchall()
+            found_diamonds=[]
+            for row in rows:
+                found_diamonds.append({"hex": row[0], "name": row[1]})
+        return render_template('index.html',
+                               logged_in=True,
+                               latest=latest,
+                               charisma_score=total,
+                               level=calculated_level,
+                               diamonds=found_diamonds)
+    return render_template('index.html', logged_in=False)
 
 @app.route('/signup_page')
 def signup_page():
@@ -82,6 +122,31 @@ def signup():
     except sqlite3.IntegrityError:
         return "<h1>Error</h1> That username is already in use. Choose another one", 400
 
+@app.route('/redeem', methods=['POST'])
+def redeem():
+    if 'username' not in session:
+        return "Please log in first", 401
+    hex=request.form.get('hex', '').strip()
+    username=session['username']
+    if len(hex)<24 or len(hex)>26:
+        return "Invalid code length!", 400
+    with sqlite3.connect('data.db') as conn:
+        curse=conn.cursor()
+        curse.execute("SELECT id FROM users WHERE username=?", (username,))
+        user_id=curse.fetchone()[0]
+        curse.execute("SELECT points_value FROM secret_codes WHERE hex=?", (hex,))
+        code_data=curse.fetchone()
+        if not code_data:
+            return "That code is invalid!", 400
+        points=code_data[0]
+        curse.execute("SELECT 1 FROM user_codes WHERE user_id=? AND hex=?", (user_id, hex))
+        if curse.fetchone():
+            return "You have already redeemed this code!", 400
+        curse.execute("INSERT INTO user_codes (user_id, hex) VALUES (?, ?)", (user_id, hex))
+        curse.execute("UPDATE users SET charisma=charisma+? WHERE id=?", (points, user_id))
+        conn.commit()
+    return redirect(url_for('home'))
+
 @app.route('/login', methods=['POST'])
 def login():
     username=request.form.get('username')
@@ -99,8 +164,7 @@ def login():
             plain_text_password=decrypted_bytes.decode()
             if plain_text_password==password:
                 session['username']=username
-                latest=get_latest_blog_post() or '/blog/2026/05/30'
-                return redirect(latest)
+                return redirect(url_for('home'))
         except Exception:
             pass
 
