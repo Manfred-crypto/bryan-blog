@@ -2,7 +2,7 @@
 body {
   background-color: #ff00ff;
   color: #89f336;
-  font-family: "Comic Sans MS", "Comic Sans", cursive;
+  font-family: "Comic Sans MS", "Comic Sans", "SF Mono";
   display: flex;
   flex-direction: column;
   align-items: center;
