@@ -188,3 +188,18 @@ def dynamic_blog(year, month, day):
         return render_template(f'blog/{year}/{month}/{day}.html', logged_in=logged_in)
     except Exception:
         abort(404)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(400)
+def bad_request(e):
+    return render_template('400.html'), 400
+
+@app.route('/hex')
+def gate():
+    key=request.args.get('key')
+    if not key:
+        abort(400)
+    return "You entered the gate."
