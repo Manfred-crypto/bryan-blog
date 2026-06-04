@@ -1,14 +1,13 @@
-import sqlite3, os, mimetypes, glob, math
-
-mimetypes.add_type('text/css', '.css')
-
+import sqlite3, os, mimetypes, glob, math, json
 from flask import Flask, render_template, request, redirect, url_for, abort, session
 from cryptography.fernet import Fernet
+
+mimetypes.add_type('text/css', '.css')
 
 SECRET_KEY=b'7_W2N6K4XzR7u1BlM09zS_VvKxN_d8Y3ZpQ2tW4eF1g='
 cipher=Fernet(SECRET_KEY)
 
-app=Flask(__name__)
+app=Flask(__name__, static_folder='static')
 app.secret_key='VvhVVyZ9yJDDaUMDC8rp7FxX6xqEyGuSlsKSyNvDULmoeU7HTTq78dMhQNH0k5FipR48qmvgHV1vwDBBTpROuG0c48tGoIgubyCpzOEy20dKzCaD9Vzf1QlaqzpH0iFF'
 
 def styed(msg, stat):
@@ -48,14 +47,10 @@ def init_data():
             FOREIGN KEY (hex) REFERENCES secret_codes(hex)
         )
     ''')
-    diamonds=[
-        ('5468697349734372756369616c', 'Readme!', 4),
-        ('4e6175676874794368696c64', '400', 2),
-        ('506c656173654765744f7574', '404', 0),
-        ('466c697020616c6c20302f31', 'Beginner!', 7),
-        ('b993968fdf9e9393dfcfd0ce', 'Puzzle solved.', 14)
-    ]
-    curse.executemany("INSERT OR IGNORE INTO secret_codes (hex, display_name, points_value) VALUES (?, ?, ?)", diamonds)
+    if os.path.exists('.env'):
+        with open('.env', 'r') as f:
+            diamonds = json.load(f).get('diamonds', [])
+            curse.executemany("INSERT OR IGNORE INTO secret_codes (hex, display_name, points_value) VALUES (?, ?, ?)", diamonds)
     conn.commit()
     conn.close()
 
@@ -66,24 +61,19 @@ def get_latest_blog_post():
     files=glob.glob(search_path)
     if not files:
         return None
-
     clean_files=[os.path.normpath(f) for f in files]
     clean_files.sort(reverse=True)
     latest_file=clean_files[0]
-
     clean_path=latest_file.replace('\\', '/')
     parts=clean_path.split('/')
-
     year=parts[-3]
     month=parts[-2]
     day=parts[-1].replace('.html', '')
-
     try:
         month=f"{int(month):02d}"
         day=f"{int(day):02d}"
     except ValueError:
         pass
-
     return f'/blog/{year}/{month}/{day}'
 
 @app.route('/')
@@ -123,12 +113,9 @@ def signup_page():
 def signup():
     username=request.form.get('username')
     password=request.form.get('password')
-
     if not username or not password:
         return styed("Fields cannot be blank!", 400)
-
     encrypted_password=cipher.encrypt(password.encode()).decode()
-
     try:
         with sqlite3.connect('data.db') as conn:
             curse=conn.cursor()
@@ -142,23 +129,23 @@ def signup():
 def redeem():
     if 'username' not in session:
         return styed("Please log in first", 401)
-    hex=request.form.get('hex', '').strip()
+    hex_code=request.form.get('hex', '').strip()
     username=session['username']
-    if len(hex)<24 or len(hex)>26:
+    if len(hex_code)<24 or len(hex_code)>26:
         return styed("Invalid code length!", 400)
     with sqlite3.connect('data.db') as conn:
         curse=conn.cursor()
         curse.execute("SELECT id FROM users WHERE username=?", (username,))
         user_id=curse.fetchone()[0]
-        curse.execute("SELECT points_value FROM secret_codes WHERE hex=?", (hex,))
+        curse.execute("SELECT points_value FROM secret_codes WHERE hex=?", (hex_code,))
         code_data=curse.fetchone()
         if not code_data:
             return styed("That code is invalid!", 400)
         points=code_data[0]
-        curse.execute("SELECT 1 FROM user_codes WHERE user_id=? AND hex=?", (user_id, hex))
+        curse.execute("SELECT 1 FROM user_codes WHERE user_id=? AND hex=?", (user_id, hex_code))
         if curse.fetchone():
             return styed("You have already redeemed this code!", 400)
-        curse.execute("INSERT INTO user_codes (user_id, hex) VALUES (?, ?)", (user_id, hex))
+        curse.execute("INSERT INTO user_codes (user_id, hex) VALUES (?, ?)", (user_id, hex_code))
         curse.execute("UPDATE users SET charisma=charisma+? WHERE id=?", (points, user_id))
         conn.commit()
     return redirect(url_for('home'))
@@ -167,12 +154,10 @@ def redeem():
 def login():
     username=request.form.get('username')
     password=request.form.get('password')
-
     with sqlite3.connect('data.db') as conn:
         curse=conn.cursor()
         curse.execute("SELECT * FROM users WHERE username=?", (username,))
         user=curse.fetchone()
-
     if user:
         stored_encrypted_string=user[2]
         try:
@@ -183,7 +168,6 @@ def login():
                 return redirect(url_for('home'))
         except Exception:
             pass
-
     return render_template('login_fail.html'), 401
 
 @app.route('/logout')
