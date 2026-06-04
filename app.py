@@ -11,6 +11,16 @@ cipher=Fernet(SECRET_KEY)
 app=Flask(__name__)
 app.secret_key='VvhVVyZ9yJDDaUMDC8rp7FxX6xqEyGuSlsKSyNvDULmoeU7HTTq78dMhQNH0k5FipR48qmvgHV1vwDBBTpROuG0c48tGoIgubyCpzOEy20dKzCaD9Vzf1QlaqzpH0iFF'
 
+def styed(msg, stat):
+    return f'''
+    <link rel="stylesheet" href="{url_for('static', filename='sty.css')}">
+    <div class="card" style="margin: 50px auto; max-width: 400px; padding: 20px;">
+        <h2>Oops!</h2>
+        <p>{msg}</p>
+        <a href="/">Go Back</a>
+    </div>
+    ''', stat
+
 def init_data():
     conn=sqlite3.connect('data.db')
     curse=conn.cursor()
@@ -25,7 +35,7 @@ def init_data():
     curse.execute('''
         CREATE TABLE IF NOT EXISTS secret_codes(
             hex TEXT PRIMARY KEY,
-            display_name TEXT NOT NULL DEFAULT 'Mystery Secret',
+            display_name TEXT NOT NULL,
             points_value INTEGER DEFAULT 1
         )
     ''')
@@ -115,7 +125,7 @@ def signup():
     password=request.form.get('password')
 
     if not username or not password:
-        return "Fields cannot be blank!", 400
+        return styed("Fields cannot be blank!", 400)
 
     encrypted_password=cipher.encrypt(password.encode()).decode()
 
@@ -126,16 +136,16 @@ def signup():
             conn.commit()
         return render_template('signup_success.html', username=username)
     except sqlite3.IntegrityError:
-        return "<h1>Error</h1> That username is already in use. Choose another one", 400
+        return styed("<h1>Error</h1> That username is already in use. Choose another one", 400)
 
 @app.route('/redeem', methods=['POST'])
 def redeem():
     if 'username' not in session:
-        return "Please log in first", 401
+        return styed("Please log in first", 401)
     hex=request.form.get('hex', '').strip()
     username=session['username']
     if len(hex)<24 or len(hex)>26:
-        return "Invalid code length!", 400
+        return styed("Invalid code length!", 400)
     with sqlite3.connect('data.db') as conn:
         curse=conn.cursor()
         curse.execute("SELECT id FROM users WHERE username=?", (username,))
@@ -143,11 +153,11 @@ def redeem():
         curse.execute("SELECT points_value FROM secret_codes WHERE hex=?", (hex,))
         code_data=curse.fetchone()
         if not code_data:
-            return "That code is invalid!", 400
+            return styed("That code is invalid!", 400)
         points=code_data[0]
         curse.execute("SELECT 1 FROM user_codes WHERE user_id=? AND hex=?", (user_id, hex))
         if curse.fetchone():
-            return "You have already redeemed this code!", 400
+            return styed("You have already redeemed this code!", 400)
         curse.execute("INSERT INTO user_codes (user_id, hex) VALUES (?, ?)", (user_id, hex))
         curse.execute("UPDATE users SET charisma=charisma+? WHERE id=?", (points, user_id))
         conn.commit()
