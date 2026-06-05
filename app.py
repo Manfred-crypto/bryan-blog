@@ -1,4 +1,4 @@
-import sqlite3, os, mimetypes, glob, math, json
+import sqlite3, os, mimetypes, glob, math
 from flask import Flask, render_template, request, redirect, url_for, abort, session
 from cryptography.fernet import Fernet
 
@@ -49,8 +49,12 @@ def init_data():
     ''')
     if os.path.exists('.env'):
         with open('.env', 'r') as f:
-            diamonds = json.load(f).get('diamonds', [])
-            curse.executemany("INSERT OR IGNORE INTO secret_codes (hex, display_name, points_value) VALUES (?, ?, ?)", diamonds)
+            for line in f:
+                if line.strip():
+                    parts = line.strip().split(',')
+                    if len(parts)==3:
+                        curse.execute("INSERT OR IGNORE INTO secret_codes (hex, display_name, points_value) VALUES (?, ?, ?)",
+                                      (parts[0], parts[1], int(parts[2])))
     conn.commit()
     conn.close()
 
