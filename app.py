@@ -23,38 +23,16 @@ def styed(msg, stat):
 def init_data():
     conn=sqlite3.connect('data.db')
     curse=conn.cursor()
-    curse.execute('''
-        CREATE TABLE IF NOT EXISTS users(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            charisma INTEGER DEFAULT 0
-        )
-    ''')
-    curse.execute('''
-        CREATE TABLE IF NOT EXISTS secret_codes(
-            hex TEXT PRIMARY KEY,
-            display_name TEXT NOT NULL,
-            points_value INTEGER DEFAULT 1
-        )
-    ''')
-    curse.execute('''
-        CREATE TABLE IF NOT EXISTS user_codes(
-            user_id INTEGER,
-            hex TEXT,
-            PRIMARY KEY (user_id, hex),
-            FOREIGN KEY (user_id) REFERENCES users(id),
-            FOREIGN KEY (hex) REFERENCES secret_codes(hex)
-        )
-    ''')
+    curse.execute('''CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, charisma INTEGER DEFAULT 0)''')
+    curse.execute('''CREATE TABLE IF NOT EXISTS hexes(hex TEXT PRIMARY KEY, name TEXT NOT NULL, char INTEGER DEFAULT 1)''')
+    curse.execute('''CREATE TABLE IF NOT EXISTS user_codes(id INTEGER, hex TEXT, PRIMARY KEY (id, hex), FOREIGN KEY (id) REFERENCES users(id), FOREIGN KEY (hex) REFERENCES hexes(hex))''')
     if os.path.exists('.env'):
         with open('.env', 'r') as f:
             for line in f:
                 if line.strip():
-                    parts = line.strip().split(',')
+                    parts=line.strip().split(',')
                     if len(parts)==3:
-                        curse.execute("INSERT OR IGNORE INTO secret_codes (hex, display_name, points_value) VALUES (?, ?, ?)",
-                                      (parts[0], parts[1], int(parts[2])))
+                        curse.execute("INSERT OR IGNORE INTO hexes (hex, name, char) VALUES (?, ?, ?)", (parts[0], parts[1], int(parts[2])))
     conn.commit()
     conn.close()
 
@@ -63,115 +41,85 @@ init_data()
 def get_latest_blog_post():
     search_path=os.path.join('templates', 'blog', '*', '*', '*.html')
     files=glob.glob(search_path)
-    if not files:
-        return None
+    if not files: return None
     clean_files=[os.path.normpath(f) for f in files]
     clean_files.sort(reverse=True)
     latest_file=clean_files[0]
-    clean_path=latest_file.replace('\\', '/')
-    parts=clean_path.split('/')
-    year=parts[-3]
-    month=parts[-2]
-    day=parts[-1].replace('.html', '')
-    try:
-        month=f"{int(month):02d}"
-        day=f"{int(day):02d}"
-    except ValueError:
-        pass
-    return f'/blog/{year}/{month}/{day}'
+    parts=latest_file.replace('\\', '/').split('/')
+    return f'/blog/{parts[-3]}/{int(parts[-2]):02d}/{int(parts[-1].replace(".html", "")):02d}'
+
+def get_latest_micro_post():
+    files=glob.glob('templates/micro/*.html')
+    if not files: return None
+    latest_id=max(int(os.path.basename(f).replace('.html', '')) for f in files)
+    return f"micro/{latest_id}"
 
 @app.route('/')
 def home():
-    latest=get_latest_blog_post() or '/blog/2026/05/31'
+    latest_blog=get_latest_blog_post() or '/blog/2026/05/31'
+    latest_micro=get_latest_micro_post()
     if 'username' in session:
         username=session['username']
         with sqlite3.connect('data.db') as conn:
             curse=conn.cursor()
             curse.execute("SELECT id, charisma FROM users WHERE username=?", (username,))
             user=curse.fetchone()
-            user_id, total=user[0], user[1]
-            calculated_level=math.floor(math.sqrt(total))
-            curse.execute('''
-                SELECT uc.hex, sc.display_name
-                FROM user_codes uc
-                JOIN secret_codes sc ON uc.hex = sc.hex
-                WHERE uc.user_id = ?
-            ''', (user_id,))
+            id, total=user[0], user[1]
+            curse.execute('SELECT uc.hex, sc.name FROM user_codes uc JOIN hexes sc ON uc.hex=sc.hex WHERE uc.id=?', (id,))
             rows=curse.fetchall()
-            found_diamonds=[]
-            for row in rows:
-                found_diamonds.append({"hex": row[0], "name": row[1]})
-        return render_template('index.html',
-                               logged_in=True,
-                               latest=latest,
-                               charisma_score=total,
-                               level=calculated_level,
-                               diamonds=found_diamonds)
-    return render_template('index.html', logged_in=False)
+            found_diamonds=[{"hex": row[0], "name": row[1]} for row in rows]
+        return render_template('index.html', logged_in=True, latest=latest_blog, latest_micro=latest_micro, charisma_score=total, level=math.floor(math.sqrt(total)), diamonds=found_diamonds)
+    return render_template('index.html', logged_in=False, latest=latest_blog, latest_micro=latest_micro)
+
+@app.route('/micro/<int:post_id>')
+def micro_blog(post_id):
+    try:
+        return render_template(f'micro/{post_id}.html', logged_in=('username' in session))
+    except Exception:
+        abort(404)
 
 @app.route('/signup_page')
-def signup_page():
-    return render_template('signup.html')
+def signup_page(): return render_template('signup.html')
 
 @app.route('/signup', methods=['POST'])
 def signup():
-    username=request.form.get('username')
-    password=request.form.get('password')
-    if not username or not password:
-        return styed("Fields cannot be blank!", 400)
-    encrypted_password=cipher.encrypt(password.encode()).decode()
+    username, password=request.form.get('username'), request.form.get('password')
+    if not username or not password: return styed("Fields cannot be blank!", 400)
     try:
         with sqlite3.connect('data.db') as conn:
-            curse=conn.cursor()
-            curse.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, encrypted_password))
+            conn.cursor().execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, cipher.encrypt(password.encode()).decode()))
             conn.commit()
         return render_template('signup_success.html', username=username)
-    except sqlite3.IntegrityError:
-        return styed("<h1>Error</h1> That username is already in use. Choose another one", 400)
+    except sqlite3.IntegrityError: return styed("Username in use.", 400)
 
 @app.route('/redeem', methods=['POST'])
 def redeem():
-    if 'username' not in session:
-        return styed("Please log in first", 401)
+    if 'username' not in session: return styed("Please log in first", 401)
     hex_code=request.form.get('hex', '').strip()
-    username=session['username']
-    if len(hex_code)<24 or len(hex_code)>26:
-        return styed("Invalid code length!", 400)
     with sqlite3.connect('data.db') as conn:
         curse=conn.cursor()
-        curse.execute("SELECT id FROM users WHERE username=?", (username,))
-        user_id=curse.fetchone()[0]
-        curse.execute("SELECT points_value FROM secret_codes WHERE hex=?", (hex_code,))
+        curse.execute("SELECT id FROM users WHERE username=?", (session['username'],))
+        id=curse.fetchone()[0]
+        curse.execute("SELECT char FROM hexes WHERE hex=?", (hex_code,))
         code_data=curse.fetchone()
-        if not code_data:
-            return styed("That code is invalid!", 400)
-        points=code_data[0]
-        curse.execute("SELECT 1 FROM user_codes WHERE user_id=? AND hex=?", (user_id, hex_code))
-        if curse.fetchone():
-            return styed("You have already redeemed this code!", 400)
-        curse.execute("INSERT INTO user_codes (user_id, hex) VALUES (?, ?)", (user_id, hex_code))
-        curse.execute("UPDATE users SET charisma=charisma+? WHERE id=?", (points, user_id))
-        conn.commit()
+        if not code_data: return styed("Invalid code!", 400)
+        curse.execute("INSERT OR IGNORE INTO user_codes (id, hex) VALUES (?, ?)", (id, hex_code))
+        if curse.rowcount > 0:
+            curse.execute("UPDATE users SET charisma=charisma+? WHERE id=?", (code_data[0], id))
+            conn.commit()
     return redirect(url_for('home'))
 
 @app.route('/login', methods=['POST'])
 def login():
-    username=request.form.get('username')
-    password=request.form.get('password')
+    username, password=request.form.get('username'), request.form.get('password')
     with sqlite3.connect('data.db') as conn:
-        curse=conn.cursor()
-        curse.execute("SELECT * FROM users WHERE username=?", (username,))
-        user=curse.fetchone()
+        user=conn.cursor().execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
     if user:
-        stored_encrypted_string=user[2]
         try:
-            decrypted_bytes=cipher.decrypt(stored_encrypted_string.encode())
-            plain_text_password=decrypted_bytes.decode()
-            if plain_text_password==password:
+            if cipher.decrypt(user[2].encode()).decode()==password:
                 session['username']=username
                 return redirect(url_for('home'))
-        except Exception:
-            pass
+        except Exception: pass
     return render_template('login_fail.html'), 401
 
 @app.route('/logout')
@@ -181,23 +129,22 @@ def logout():
 
 @app.route('/blog/<year>/<month>/<day>')
 def dynamic_blog(year, month, day):
-    try:
-        logged_in='username' in session
-        return render_template(f'blog/{year}/{month}/{day}.html', logged_in=logged_in)
-    except Exception:
-        abort(404)
-
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
-@app.errorhandler(400)
-def bad_request(e):
-    return render_template('400.html'), 400
+    try: return render_template(f'blog/{year}/{month}/{day}.html', logged_in='username' in session)
+    except Exception: abort(404)
 
 @app.route('/hex')
-def gate():
-    key=request.args.get('key')
-    if not key:
-        abort(400)
-    return "You entered the gate."
+def gate(): return "You entered the gate." if request.args.get('key') else abort(400)
+
+@app.route('/leaderboard')
+def leaderboard():
+    with sqlite3.connect('data.db') as conn:
+        top_users=conn.cursor().execute(
+            "SELECT username, charisma FROM users ORDER BY charisma DESC LIMIT 10"
+        ).fetchall()
+    return render_template('leaderboard.html', users=top_users)
+
+@app.errorhandler(404)
+def pnf(e): return render_template('404.html'), 404
+
+@app.errorhandler(400)
+def br(e): return render_template('400.html'), 400
