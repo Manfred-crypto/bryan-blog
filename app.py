@@ -64,6 +64,9 @@ def home():
             curse=conn.cursor()
             curse.execute("SELECT id, charisma FROM users WHERE username=?", (username,))
             user=curse.fetchone()
+            if user is None:
+                session.pop('username', None)
+                return redirect(url_for('home'))
             uid, total=user[0], user[1]
             curse.execute("SELECT COUNT(*) FROM hexes")
             total_codes=curse.fetchone()[0]
