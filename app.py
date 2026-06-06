@@ -64,19 +64,27 @@ def home():
             curse=conn.cursor()
             curse.execute("SELECT id, charisma FROM users WHERE username=?", (username,))
             user=curse.fetchone()
-            id, total=user[0], user[1]
-            curse.execute('SELECT uc.hex, sc.name FROM user_codes uc JOIN hexes sc ON uc.hex=sc.hex WHERE uc.id=?', (id,))
+            uid, total=user[0], user[1]
+            curse.execute("SELECT COUNT(*) FROM hexes")
+            total_codes=curse.fetchone()[0]
+            curse.execute("SELECT COUNT(*) FROM user_codes WHERE id=?", (uid,))
+            redeemed=curse.fetchone()[0]
+            curse.execute('SELECT uc.hex, sc.name FROM user_codes uc JOIN hexes sc ON uc.hex=sc.hex WHERE uc.id=?', (uid,))
             rows=curse.fetchall()
-            found_diamonds=[{"hex": row[0], "name": row[1]} for row in rows]
-        return render_template('index.html', logged_in=True, latest=latest_blog, latest_micro=latest_micro, charisma_score=total, level=math.floor(math.sqrt(total)), diamonds=found_diamonds)
+            diamonds=[{"hex": row[0], "name": row[1]} for row in rows]
+        return render_template('index.html', logged_in=True, latest=latest_blog, latest_micro=latest_micro, charisma_score=total, level=math.floor(math.sqrt(total)), diamonds=diamonds, remaining=total_codes-redeemed)
     return render_template('index.html', logged_in=False, latest=latest_blog, latest_micro=latest_micro)
+
+@app.route('/leaderboard')
+def leaderboard():
+    with sqlite3.connect('data.db') as conn:
+        top_users=conn.cursor().execute("SELECT username, charisma FROM users ORDER BY charisma DESC LIMIT 10").fetchall()
+    return render_template('leaderboard.html', users=top_users)
 
 @app.route('/micro/<int:post_id>')
 def micro_blog(post_id):
-    try:
-        return render_template(f'micro/{post_id}.html', logged_in=('username' in session))
-    except Exception:
-        abort(404)
+    try: return render_template(f'micro/{post_id}.html', logged_in=('username' in session))
+    except Exception: abort(404)
 
 @app.route('/signup_page')
 def signup_page(): return render_template('signup.html')
@@ -99,13 +107,13 @@ def redeem():
     with sqlite3.connect('data.db') as conn:
         curse=conn.cursor()
         curse.execute("SELECT id FROM users WHERE username=?", (session['username'],))
-        id=curse.fetchone()[0]
+        uid=curse.fetchone()[0]
         curse.execute("SELECT char FROM hexes WHERE hex=?", (hex_code,))
         code_data=curse.fetchone()
         if not code_data: return styed("Invalid code!", 400)
-        curse.execute("INSERT OR IGNORE INTO user_codes (id, hex) VALUES (?, ?)", (id, hex_code))
-        if curse.rowcount > 0:
-            curse.execute("UPDATE users SET charisma=charisma+? WHERE id=?", (code_data[0], id))
+        curse.execute("INSERT OR IGNORE INTO user_codes (id, hex) VALUES (?, ?)", (uid, hex_code))
+        if curse.rowcount>0:
+            curse.execute("UPDATE users SET charisma=charisma+? WHERE id=?", (code_data[0], uid))
             conn.commit()
     return redirect(url_for('home'))
 
@@ -134,14 +142,6 @@ def dynamic_blog(year, month, day):
 
 @app.route('/hex')
 def gate(): return "You entered the gate." if request.args.get('key') else abort(400)
-
-@app.route('/leaderboard')
-def leaderboard():
-    with sqlite3.connect('data.db') as conn:
-        top_users=conn.cursor().execute(
-            "SELECT username, charisma FROM users ORDER BY charisma DESC LIMIT 10"
-        ).fetchall()
-    return render_template('leaderboard.html', users=top_users)
 
 @app.errorhandler(404)
 def pnf(e): return render_template('404.html'), 404

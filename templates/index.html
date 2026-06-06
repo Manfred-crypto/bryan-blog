@@ -1,68 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Bryan's Blog Dashboard</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='sty.css') }}">
+    <meta charset="UTF-8">
+    <title>My Personal Site</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='sty.css') }}">
 </head>
 <body>
 
+    <nav>
+        <a href="/">Home</a>
+        <a href="/leaderboard">Leaderboard</a>
+        {% if logged_in %}
+            <a href="/logout">Logout</a>
+        {% else %}
+            <a href="/signup_page">Sign Up</a>
+        {% endif %}
+    </nav>
+
+    <h1>Welcome to my corner of the web</h1>
+
+    <div class="content-links">
+        <p><a href="{{ latest }}">Read latest blog post</a></p>
+        {% if latest_micro %}
+            <p><a href="{{ url_for('micro_blog', post_id=latest_micro.split('/')[-1]) }}">Read latest micro-post</a></p>
+        {% endif %}
+    </div>
+
     {% if logged_in %}
-        <div class="dashboard-header" style="margin-bottom: 20px;">
-            <h1>Welcome back, {{ session['username'] }}!</h1>
-            <p><a href="{{ latest }}">Click here to read my latest blog post</a></p>
-            <p><a href="/leaderboard">View Leaderboard</a></p>
-            <p><a href="/logout" style="color: red;">Log Out</a></p>
-        </div>
+        <div class="card">
+            <h2>Your Stats</h2>
+            <p><strong>Charisma:</strong> {{ charisma_score }} (Level {{ level }})</p>
+            <p><strong>Diamonds Found:</strong> {{ diamonds|length }}</p>
+            <p><strong>Codes Remaining:</strong> {{ remaining }}</p>
 
-        <div class="stat-container" style="background: #fff; padding: 20px; border-radius: 8px; max-width: 400px; border: 1px solid #ddd;">
-            <h2>Explorer Level: {{ level }}</h2>
-            <h3>Charisma Score: <span class="badge" style="background: #a00; color: #fff; padding: 2px 6px;">{{ charisma_score }}</span></h3>
-
-            <p>Your <strong>Charisma</strong> increases when you submit metaphorical diamonds related to Bryan like 466c697020616c6c20302f31.</p>
-
-            <form action="/redeem" method="POST" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
-                <input
-                  type="text"
-                  name="hex"
-                  placeholder="Enter 24-26 hex chars..."
-                  required
-                  maxlength="26"
-                  pattern="[0-9a-fA-F]{24,26}"
-                  title="Please enter a valid hex code containing 24 to 26 characters (0-9, a-f)."
-                  style="padding: 6px; font-family: monospace; flex-grow: 1;"
-                  oninput="this.value = this.value.replace(/[^0-9a-fA-F]/g, ''); document.getElementById('char-count').innerText = this.value.length;">
-
-                <span id="char-count" style="color: #888; font-family: monospace; font-weight: bold; min-width: 20px;">0</span>
-                <button type="submit" style="background: #080; color: #fff; border: none; padding: 6px 12px; cursor: pointer;">♦</button>
+            <h3>Redeem a Code</h3>
+            <form action="/redeem" method="POST">
+                <input type="text" name="hex" placeholder="Enter diamond code">
+                <button type="submit">Redeem</button>
             </form>
-
-            <div class="diamond-history" style="border-top: 1px dashed #ccc; padding-top: 10px;">
-                <h4 style="margin: 0 0 8px 0;">💎 Your Found Diamonds Collection:</h4>
-                {% if diamonds %}
-                    <ul style="list-style-type: none; padding: 0; margin: 0;">
-                        {% for diamond in diamonds %}
-                            <li style="margin-bottom: 4px; font-family: monospace; font-size: 0.9em;">
-                                <span style="color: #ff007f;">♦</span> <strong>{{ diamond.name }}</strong>
-                                <span style="color: #777;">({{ diamond.hex }})</span>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p style="color: #999; font-style: italic; margin: 0; font-size: 0.9em;">No collection logged yet. Go hunting!</p>
-                {% endif %}
-            </div>
         </div>
-
     {% else %}
-        <h1>Welcome to Bryan's Site</h1>
-        <p>Please log in to access your status dashboard and start hunting for codes.</p>
-
-        <form action="/login" method="POST">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Log In</button>
-        </form>
-        <p>Don't have an account? <a href="/signup_page">Sign up here</a></p>
+        <p><a href="/signup_page">Log in or Sign up</a> to start tracking your charisma!</p>
     {% endif %}
 
 </body>
