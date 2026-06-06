@@ -50,27 +50,27 @@ def get_latest_blog_post():
 
 @app.route('/')
 def home():
-    latest = get_latest_blog_post() or '/blog/2026/05/31'
+    latest=get_latest_blog_post() or '/blog/2026/05/31'
     if 'username' in session:
-        username = session['username']
+        username=session['username']
         with sqlite3.connect('data.db') as conn:
-            curse = conn.cursor()
+            curse=conn.cursor()
             curse.execute("SELECT id, charisma FROM users WHERE username=?", (username,))
-            user = curse.fetchone()
+            user=curse.fetchone()
             if not user:
                 session.pop('username', None)
                 return render_template('index.html', logged_in=False, latest=latest)
 
-            user_id, total = user[0], user[1]
-            level = math.floor(math.sqrt(total))
+            user_id, total=user[0], user[1]
+            level=math.floor(math.sqrt(total))
 
             curse.execute("SELECT COUNT(*) FROM secret_codes")
-            total_codes = curse.fetchone()[0]
+            total_codes=curse.fetchone()[0]
             curse.execute("SELECT COUNT(*) FROM user_codes WHERE user_id=?", (user_id,))
-            redeemed = curse.fetchone()[0]
+            redeemed=curse.fetchone()[0]
 
-            curse.execute('SELECT uc.hex, sc.display_name FROM user_codes uc JOIN secret_codes sc ON uc.hex = sc.hex WHERE uc.user_id = ?', (user_id,))
-            found_diamonds = [{"hex": row[0], "name": row[1]} for row in curse.fetchall()]
+            curse.execute('SELECT uc.hex, sc.display_name FROM user_codes uc JOIN secret_codes sc ON uc.hex=sc.hex WHERE uc.user_id=?', (user_id,))
+            found_diamonds=[{"hex": row[0], "name": row[1]} for row in curse.fetchall()]
 
         return render_template('index.html', logged_in=True, latest=latest, charisma_score=total, level=level, diamonds=found_diamonds, remaining=total_codes-redeemed)
     return render_template('index.html', logged_in=False, latest=latest)
@@ -78,16 +78,16 @@ def home():
 @app.route('/leaderboard')
 def leaderboard():
     with sqlite3.connect('data.db') as conn:
-        top_users = conn.cursor().execute("SELECT username, charisma FROM users ORDER BY charisma DESC LIMIT 10").fetchall()
+        top_users=conn.cursor().execute("SELECT username, charisma FROM users ORDER BY charisma DESC LIMIT 10").fetchall()
     return render_template('leaderboard.html', users=top_users)
 
 @app.route('/signup_page')
-def signup_page(): 
+def signup_page():
     return render_template('signup.html')
 
 @app.route('/signup', methods=['POST'])
 def signup():
-    username, password = request.form.get('username'), request.form.get('password')
+    username, password=request.form.get('username'), request.form.get('password')
     if not username or not password: return styed("Fields cannot be blank!", 400)
     try:
         with sqlite3.connect('data.db') as conn:
@@ -99,27 +99,27 @@ def signup():
 @app.route('/redeem', methods=['POST'])
 def redeem():
     if 'username' not in session: return styed("Please log in first", 401)
-    hex_code = request.form.get('hex', '').strip()
+    hex_code=request.form.get('hex', '').strip()
     with sqlite3.connect('data.db') as conn:
-        curse = conn.cursor()
+        curse=conn.cursor()
         curse.execute("SELECT id FROM users WHERE username=?", (session['username'],))
-        user_id = curse.fetchone()[0]
+        user_id=curse.fetchone()[0]
         curse.execute("SELECT points_value FROM secret_codes WHERE hex=?", (hex_code,))
-        code = curse.fetchone()
+        code=curse.fetchone()
         if not code: return styed("Invalid code!", 400)
         curse.execute("INSERT OR IGNORE INTO user_codes (user_id, hex) VALUES (?, ?)", (user_id, hex_code))
-        if curse.rowcount > 0:
+        if curse.rowcount>0:
             curse.execute("UPDATE users SET charisma=charisma+? WHERE id=?", (code[0], user_id))
             conn.commit()
     return redirect(url_for('home'))
 
 @app.route('/login', methods=['POST'])
 def login():
-    username, password = request.form.get('username'), request.form.get('password')
+    username, password=request.form.get('username'), request.form.get('password')
     with sqlite3.connect('data.db') as conn:
-        user = conn.cursor().execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+        user=conn.cursor().execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
     if user and cipher.decrypt(user[2].encode()).decode() == password:
-        session['username'] = username
+        session['username']=username
         return redirect(url_for('home'))
     return render_template('login_fail.html'), 401
 
