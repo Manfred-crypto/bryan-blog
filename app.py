@@ -81,6 +81,10 @@ def leaderboard():
         top_users = conn.cursor().execute("SELECT username, charisma FROM users ORDER BY charisma DESC LIMIT 10").fetchall()
     return render_template('leaderboard.html', users=top_users)
 
+@app.route('/signup_page')
+def signup_page(): 
+    return render_template('signup.html')
+
 @app.route('/signup', methods=['POST'])
 def signup():
     username, password = request.form.get('username'), request.form.get('password')
