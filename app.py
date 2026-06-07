@@ -26,6 +26,7 @@ def init_data():
     curse.execute('''CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, charisma INTEGER DEFAULT 0)''')
     curse.execute('''CREATE TABLE IF NOT EXISTS secret_codes(hex TEXT PRIMARY KEY, display_name TEXT NOT NULL, points_value INTEGER DEFAULT 1)''')
     curse.execute('''CREATE TABLE IF NOT EXISTS user_codes(user_id INTEGER, hex TEXT, PRIMARY KEY (user_id, hex), FOREIGN KEY (user_id) REFERENCES users(id), FOREIGN KEY (hex) REFERENCES secret_codes(hex))''')
+    curse.execute('''CREATE TABLE IF NOT EXISTS comments(id INTEGER PRIMARY KEY AUTOINCREMENT, blog_path TEXT NOT NULL, username TEXT NOT NULL, content TEXT NOT NULL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
     if os.path.exists('.env'):
         with open('.env', 'r') as f:
             for line in f:
@@ -128,10 +129,21 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('home'))
 
-@app.route('/blog/<year>/<month>/<day>')
+@app.route('/blog/<year>/<month>/<day>', methods=['GET', 'POST'])
 def dynamic_blog(year, month, day):
-    try: return render_template(f'blog/{year}/{month}/{day}.html', logged_in='username' in session)
-    except: abort(404)
+    blog_path=f'/blog/{year}/{month}/{day}'
+    if request.method=='POST':
+        if 'username' not in session: return styed("Login to comment", 401)
+        content=request.form.get('content', '').strip()
+        if content:
+            with sqlite3.connect('data.db') as conn:
+                conn.execute("INSERT INTO comments (blog_path, username, content) VALUES (?, ?, ?)",
+                             (blog_path, session['username'], content))
+        return redirect(blog_path)
+    with sqlite3.connect('data.db') as conn:
+        comments=conn.execute("SELECT username, content, timestamp FROM comments WHERE blog_path=? ORDER BY timestamp DESC",
+                                (blog_path,)).fetchall()
+    return render_template(f'blog/{year}/{month}/{day}.html', logged_in='username' in session, comments=comments)
 
 @app.errorhandler(404)
 def pnf(e):
